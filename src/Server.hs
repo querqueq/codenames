@@ -11,8 +11,8 @@
 module Server where
 
 import API hiding                   (CodenameAPI)
-import Models
-import GameModels                   (Game)
+import Lobby
+import Game                         (Game)
 import Servant
 import Servant.Server
 import Network.Wai.Handler.Warp     (run)

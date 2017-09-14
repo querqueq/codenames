@@ -8,9 +8,9 @@
 
 module API where
 
-import Models
-import GameModels hiding (Team)
-import qualified GameModels as GM
+import Lobby
+import Game hiding (Team)
+import qualified Game as Game
 import Servant.API 
 
 type Id = Int
@@ -18,7 +18,7 @@ type GameId = Capture "gameid" Id
 type LobbyId = Capture "lobbyid" Id
 type Token = String
 type PlayerToken = Capture "player" Token
-type Team = Capture "team" GM.Team
+type Team = Capture "team" Game.Team
 
 type CodenameAPI = LobbyAPI :<|> GameAPI
 

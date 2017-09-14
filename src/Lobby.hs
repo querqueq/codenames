@@ -1,12 +1,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric #-}
 
-module Models where
+module Lobby where
 
 import GHC.Generics
 import Data.Aeson
 import Data.Map.Strict (Map)
-import GameModels
+import Game (Team)
 
 type Name = String
 data GameConfig = GameConfig

@@ -42,18 +42,6 @@ game starter words = do
           teamSize team = if team == starter then baseTeamSize + 1 else baseTeamSize
           teamDistribution = concat $ map (\t -> replicate (teamSize t) t) allTeams
 
-checkWin :: Game -> Maybe Team
-checkWin = checkWin' . foldl checkCodename (0,0,Nothing) . codenames
- where checkCodename (r,b,g) (Codename Nothing Red    _)   = (r+1,b  ,g)
-       checkCodename (r,b,g) (Codename Nothing Blue   _)   = (r  ,b+1,g)
-       checkCodename (r,b,g) (Codename t       Grey   _)   = (r  ,b  ,t)
-       checkCodename (r,b,g) (Codename _       _      _)   = (r  ,b  ,g)
-       checkWin' (0,_,_) = Just Red
-       checkWin' (_,0,_) = Just Blue
-       checkWin' (_,_,Just Red)  = Just Blue
-       checkWin' (_,_,Just Blue) = Just Red
-       checkWin' (_,_,_) = Nothing
-
 nextTeam :: Team -> Team
 nextTeam Red = Blue
 nextTeam Blue = Red
@@ -79,26 +67,6 @@ move g@(Game {..}) t mv
                             ++ [NextTeam turnOf']
                             ++ cs
             in foldl select (Right (Game turnOf redLeft blueLeft [], [])) codenames
-    {--
-          move' (Select w) = let
-                select l@(Left _) = l
-                select (Right cn@(Codename {..}))
-                    | selectedBy /= Nothing = Left $ AlreadySelected cn
-                    | otherwise = Right $ Selected $ Codename (Just t) ownedBy word
-                safeHead [] = Left $ UnknownCodename w
-                safeHead [x:_] = x
-            in select $ safeHead $ filter (\Codename {..} -> word == w) codenames
-          finish = fmap ((,) g)
-            let select r cn@(Codename {..})
-                    | word /= w = r
-                    | selectedBy /= Nothing = Left $ AlreadySelected cn
-                    | otherwise = fmap ((:) (Selected $ Codename (Just t) ownedBy word)) r
-            in foldl select (Right []) codenames
-            --}
-
--- Fix points
--- Check winner
--- Set next team
 
 testGame :: (MonadRandom m) => m Game
 testGame = game Red testWords

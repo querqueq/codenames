@@ -18,7 +18,19 @@ executable codenames
   main-is:             Main.hs
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
-                     , matrix
+                     , stm
+                     , binary
                      , MonadRandom
                      , random-shuffle
                      , mtl
+                     , servant
+                     , servant-server
+                     , aeson
+                     --, ulid
+                     , bytestring
+                     , text
+                     , warp
+                     , wai
+                     , wai-extra
+                     , containers
+                     , transformers

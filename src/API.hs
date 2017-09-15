@@ -13,7 +13,7 @@ import Game hiding (Team)
 import qualified Game as Game
 import Servant.API 
 
-type Id = Int
+type Id = String
 type GameId = Capture "gameid" Id
 type LobbyId = Capture "lobbyid" Id
 type Token = String
@@ -25,7 +25,7 @@ type CodenameAPI = LobbyAPI :<|> GameAPI
 
 type LobbyAPI = "lobbies" :> Get '[JSON] [(Id,Lobby)]
               -- Creates a new lobby and returns its game id
-              :<|> "lobbies" :> ReqBody '[JSON] GameConfig :> Post '[JSON] Lobby
+              :<|> "lobbies" :> ReqBody '[JSON] GameConfig :> Post '[JSON] (Id, Lobby)
               -- Requests for a specific lobby
               :<|> "lobbies" :> LobbyId :> (
                 -- Returns the current state of the lobby

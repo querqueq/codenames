@@ -24,6 +24,7 @@ import Control.Concurrent.STM       (atomically)
 import Control.Concurrent.STM.TVar  --(TVar)
 import Data.Aeson
 import Data.Binary.Builder          (fromLazyByteString)
+import Data.ULID
 
 import qualified Data.Map.Strict as Map
 
@@ -92,7 +93,7 @@ readerServer cfg@(Config {channels = channels}) = enter (readerToExcept cfg) lob
     :<|> Tagged . sse channels
 
 -- Type of Application: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
-sse :: TVar (Map.Map Id (Chan ServerEvent)) -> Int -> Application
+sse :: TVar (Map.Map Id (Chan ServerEvent)) -> Id -> Application
 sse channels id  req resp = do
     chan <- liftIO $ atomically $ do
         chans <- readTVar channels
@@ -111,16 +112,16 @@ getLobbies = do
         lobbies <- readTVar state
         return $ Map.toList lobbies
 
-createLobby :: GameConfig -> AppM Lobby
+createLobby :: GameConfig -> AppM (Id,Lobby)
 createLobby (GameConfig {..}) = do
     Config { lobbyState = state, channels = channels } <- ask
-    let id = 12
+    id <- show <$> liftIO getULID
     let lobby = Lobby [] $ Map.fromList $ [(team, Members Nothing Nothing) | team <- [1..numberOfTeams]]
     chan <- liftIO newChan
     liftIO $ atomically $ do
         modifyTVar' state $ Map.insert id lobby
         modifyTVar' channels $ Map.insert id chan
-    return lobby
+    return (id,lobby)
 
 getLobby :: Id -> AppM Lobby
 getLobby lid = do

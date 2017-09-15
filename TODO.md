@@ -11,7 +11,7 @@
 
 1.  ~~Write whole Lobby and Game logic~~
 2.  ~~Make getting/modifying of state generalized~~
-3.  Add uuids for id instead of fixed id 12 or use sparql to get short readable names for ids
+3.  ~~Add uuids for id instead of fixed id 12~~ or use sparql to get short readable names for ids
 4.  Authorize player actions
 5.  Return error with content
 6.  Map errors to appropriate http status codes

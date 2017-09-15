@@ -34,3 +34,5 @@ executable codenames
                      , wai-extra
                      , containers
                      , transformers
+                     , hsparql
+                     , ulid

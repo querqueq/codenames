@@ -37,15 +37,51 @@ data Config = Config
 
 type AppM = ReaderT Config (ExceptT ServantErr IO)
 
+type TAPI = "lobbies" :> LobbyId :> (
+            Get '[JSON] Lobby
+       :<|> "player" :> ReqBody '[JSON] Name :> Post '[JSON] Token)
+
+f :: ((Lobby, [LobbyEvent]) -> a) -> LobbyUpdate -> AppM a
+f _ (Left x) = throwError err409 -- TODO add message, somehow decide which status code
+f g (Right x) = return $ g x
+
 lobbyServer :: ServerT LobbyAPI AppM
 lobbyServer = getLobbies
-     :<|> createLobby
-     :<|> getLobby
-     :<|> joinLobby
-     :<|> leaveLobby
-     :<|> joinTeam
-     :<|> leaveTeam
-     :<|> switchRole
+         :<|> createLobby 
+         :<|> withLobby
+    where withLobby id = getLobby id
+                    :<|> (\name -> modifyLobby id (playerJoin name) (const "token"))
+                    :<|> withPlayer id
+          withPlayer id token = (\name -> modifyLobby id (playerLeave name) (const NoContent))
+                           :<|> undefined
+
+modifyLobby :: Id -> (Lobby -> LobbyUpdate) -> (Lobby -> a) -> AppM a
+modifyLobby id updateF returnF = do
+    Config {..} <- ask
+    result <- liftIO $ atomically $ do 
+        lobby <- readTVar lobbyState >>= return . (Map.lookup id)
+        case updateF <$> lobby of
+            (Just (Right (lobby',events))) -> do 
+                modifyTVar' lobbyState $ Map.insert id lobby'
+                channel <- readTVar channels >>= return . (Map.lookup id)
+                return $ case channel of
+                    Nothing -> Left "channel missing"
+                    (Just channel) -> Right (lobby',events,channel)
+            Nothing  -> return $ Left "unknown lobby"
+            (Just (Left x)) -> return $ Left "error" -- TODO return actual error
+    case result of
+        (Left x) -> throwError err400 -- TODO return actual error
+        (Right (lobby,events,channel)) -> do
+            liftIO $ mapM_ (writeChan channel . serverEvent LobbyChannel) events
+            return $ returnF lobby
+
+lobby :: Id -> AppM Lobby
+lobby id = do 
+    Config { lobbyState = state } <- ask
+    lobby <- liftIO $ atomically $ do 
+        lobby <- readTVar state >>= return . (Map.lookup id)
+        return lobby 
+    maybe (throwError err404) return lobby
 
 readerServer :: Config -> Server CodenameAPI
 readerServer cfg@(Config {channels = channels}) = enter (readerToExcept cfg) lobbyServer 
@@ -100,10 +136,10 @@ joinLobby lid name = do
         return $ Map.lookup lid chans
     case chan of
         (Just chan) -> do
-            liftIO $ writeChan chan $ serverEvent LobbyChannel $ Joined name
+            liftIO $ writeChan chan $ serverEvent LobbyChannel $ PlayerJoined name
             return $ name ++ "-token"
         Nothing -> throwError err404
-    where addPlayer (Lobby {..}) = Lobby (name : unassignedPlayer) assignedPlayers
+    where addPlayer (Lobby {..}) = Lobby (name : unassignedPlayers) assignedPlayers
 leaveLobby = undefined
 joinTeam = undefined
 leaveTeam = undefined

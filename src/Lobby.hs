@@ -51,20 +51,23 @@ freeSpots (Lobby {..}) = totalSpots - filledSpots - (length unassignedPlayers)
 lobbyReady :: Lobby -> Bool
 lobbyReady l@(Lobby {..}) = lobbyFull l && length unassignedPlayers == 0
 
-getTeam :: Lobby -> Name -> Maybe Team
-getTeam (Lobby {..}) name = listToMaybe $ Map.keys $ Map.filter checkTeam assignedPlayers
+getTeam :: Name -> Lobby -> Maybe Team
+getTeam name (Lobby {..}) = listToMaybe $ Map.keys $ Map.filter checkTeam assignedPlayers
     where checkTeam (Members {..}) = isName spy || isName spymaster
           isName = maybe False (==name) 
 
-playerJoin :: Lobby -> Name -> LobbyUpdate
-playerJoin l@(Lobby {..}) name
+playerJoin :: Name -> Lobby -> LobbyUpdate
+playerJoin name l@(Lobby {..})
     | lobbyFull l  = Left "lobby full"
-    | False = Left "duplicate name" -- TODO check if name is already in lobby
+    | playerInLobby name l = Left "duplicate name" -- TODO check if name is already in lobby
     | otherwise = Right $ (Lobby (unassignedPlayers ++ [name]) assignedPlayers, [PlayerJoined name])
 
-playerLeave :: Lobby -> Name -> LobbyUpdate
-playerLeave l@(Lobby {..}) name =
-    case getTeam l name of
+playerInLobby :: Name -> Lobby -> Bool
+playerInLobby name l@(Lobby {..}) = maybe (elem name unassignedPlayers) (const True) (getTeam name l) 
+
+playerLeave :: Name -> Lobby -> LobbyUpdate
+playerLeave name l@(Lobby {..}) =
+    case getTeam name l of
         (Just team) -> Right $ (Lobby unassignedPlayers $ Map.adjust (memberLeave name) team assignedPlayers, events)
         Nothing -> if length unassignedPlayers' < length unassignedPlayers 
             then Right $ (Lobby unassignedPlayers' assignedPlayers, events)
@@ -76,7 +79,7 @@ playerLeave l@(Lobby {..}) name =
 assignTeam :: Lobby -> Team -> Name -> LobbyUpdate
 assignTeam l team name
     | teamFull l team = Left $ "team is full"
-    | otherwise = (\(Lobby {..},_) -> (Lobby unassignedPlayers $ Map.adjust join team assignedPlayers, [TeamAssigned team name])) <$> playerLeave l name
+    | otherwise = (\(Lobby {..},_) -> (Lobby unassignedPlayers $ Map.adjust join team assignedPlayers, [TeamAssigned team name])) <$> playerLeave name l
     where join (Members Nothing x) = Members (Just name) x
           join (Members x Nothing) = Members x (Just name)
 

@@ -52,8 +52,12 @@ lobbyServer = getLobbies
     where withLobby id = getLobby id
                     :<|> (\name -> modifyLobby id (playerJoin name) (const "token"))
                     :<|> withPlayer id
-          withPlayer id token = (\name -> modifyLobby id (playerLeave name) (const NoContent))
-                           :<|> undefined
+          withPlayer id token = (\name -> modifyLobby id (playerLeave name) emptyReply)
+                           :<|> (\team name -> modifyLobby id (assignTeam team name) emptyReply)
+                           :<|> (\team name -> modifyLobby id (unassignTeam name) emptyReply)
+                           :<|> (\team -> modifyLobby id (switchRoles team) emptyReply)
+                           -- :<|> undefined
+          emptyReply = const NoContent
 
 modifyLobby :: Id -> (Lobby -> LobbyUpdate) -> (Lobby -> a) -> AppM a
 modifyLobby id updateF returnF = do

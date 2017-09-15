@@ -29,7 +29,7 @@ data Lobby = Lobby
     , assignedPlayers   :: Map Team Members
     } deriving (Generic, Show, ToJSON, FromJSON)
 
-data LobbyEvent = PlayerJoined Name | PlayerLeft Name | TeamAssigned Team Name | RolesSwitched Members | Closed | Starting
+data LobbyEvent = PlayerJoined Name | PlayerLeft Name | TeamAssigned Team Name | TeamUnassigned Name | RolesSwitched Members | Closed | Starting
     deriving (Generic, Show, ToJSON, FromJSON)
 
 teamFull' :: Members -> Bool
@@ -76,15 +76,18 @@ playerLeave name l@(Lobby {..}) =
           events = [PlayerLeft name]
           unassignedPlayers' = filter (/=name) unassignedPlayers
 
-assignTeam :: Lobby -> Team -> Name -> LobbyUpdate
-assignTeam l team name
+assignTeam :: Team -> Name -> Lobby -> LobbyUpdate
+assignTeam team name l
     | teamFull l team = Left $ "team is full"
     | otherwise = (\(Lobby {..},_) -> (Lobby unassignedPlayers $ Map.adjust join team assignedPlayers, [TeamAssigned team name])) <$> playerLeave name l
     where join (Members Nothing x) = Members (Just name) x
           join (Members x Nothing) = Members x (Just name)
 
-switchRoles :: Lobby -> Team -> LobbyUpdate
-switchRoles l@(Lobby {..}) team = 
+unassignTeam :: Name -> Lobby -> LobbyUpdate
+unassignTeam name l = (\(Lobby {..},_) -> (Lobby (unassignedPlayers ++ [name]) assignedPlayers, [TeamUnassigned name])) <$> playerLeave name l
+
+switchRoles :: Team -> Lobby -> LobbyUpdate
+switchRoles team l@(Lobby {..}) = 
     case Map.lookup team assignedPlayers of
         Nothing -> Left $ "team " ++ show team ++ "not found"
         (Just (Members {..})) -> let

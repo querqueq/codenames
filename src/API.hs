@@ -39,9 +39,9 @@ type LobbyAPI = "lobbies" :> Get '[JSON] [(Id,Lobby)]
                         -- Join a team
                    :<|> "teams" :> Team :> ReqBody '[JSON] Name :> Post '[JSON] NoContent
                         -- Leave a team
-                   :<|> "teams" :> Team :> PlayerName :> Delete '[JSON] NoContent
+                   :<|> "teams" :> Team :> "players" :> PlayerName :> Delete '[JSON] NoContent
                         -- Switch role
-                   :<|> "teams" :> Team :> "switch" :> ReqBody '[JSON] Name :> Post '[JSON] NoContent
+                   :<|> "teams" :> Team :> "switch" :> Post '[JSON] NoContent
                    )
                 )
                       

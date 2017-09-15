@@ -11,10 +11,11 @@
 
 1.  ~~Write whole Lobby and Game logic~~
 2.  ~~Make the getting/modifying of state generalized~~
-3.  Authorize player actions
-4.  Returns error with content
-5.  Map errors to appropriate http status codes
-6.  Logging!
-7.  Implement a minimal Lobby client
-8.  ???
-9.  Add sparql for game creation
+3.  Add uuids for id instead of fixed id 12 or use sparql to get short readable names for ids
+4.  Authorize player actions
+5.  Returns error with content
+6.  Map errors to appropriate http status codes
+7.  Logging!
+8.  Implement a minimal Lobby client
+9.  ???
+10. Add sparql for game creation

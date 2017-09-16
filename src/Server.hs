@@ -17,7 +17,8 @@ import Lobby
 import Game                         (Game)
 import Servant
 import Servant.Server
-import Network.Wai.Handler.Warp     (run)
+import Network.Wai.Logger
+import Network.Wai.Handler.Warp     
 import Network.Wai.EventSource
 import Control.Concurrent.Chan
 import Control.Monad.Reader         --(ReaderT, runReaderT, lift, MonadReader, liftIO)
@@ -181,8 +182,9 @@ codenameAPI :: Proxy CodenameAPI
 codenameAPI = Proxy
 
 test :: IO ()
-test = do
+test = withStdoutLogger $ \applogger -> do
+    let settings = setPort 8080 $ setLogger applogger defaultSettings
     lobbies <- atomically $ newTVar Map.empty
     lobbyChannel <- atomically $ newTVar Map.empty
     let cfg = Config lobbies lobbyChannel
-    run 8080 $ app cfg
+    runSettings settings $ app cfg

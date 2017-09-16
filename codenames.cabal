@@ -32,6 +32,7 @@ executable codenames
                      , warp
                      , wai
                      , wai-extra
+                     , wai-logger
                      , containers
                      , transformers
                      , hsparql

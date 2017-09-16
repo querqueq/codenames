@@ -13,7 +13,7 @@ import Data.Map.Strict (Map)
 import Data.Maybe
 import qualified Data.Map.Strict as Map
 
-type LobbyUpdate = Either String (Lobby, [LobbyEvent])
+type LobbyUpdate = Either LobbyError (Lobby, [LobbyEvent])
 type Name = String
 data GameConfig = GameConfig
     { numberOfTeams :: Int
@@ -29,8 +29,11 @@ data Lobby = Lobby
     , assignedPlayers   :: Map Team Members
     } deriving (Generic, Show, ToJSON, FromJSON)
 
-data LobbyEvent = PlayerJoined Name | PlayerLeft Name | TeamAssigned Team Name | TeamUnassigned Name | RolesSwitched Members | Closed | Starting
+data LobbyEvent = PlayerJoined Name | PlayerLeft Name | TeamAssigned Team Name 
+                | TeamUnassigned Name | RolesSwitched Members | Closed | Starting
     deriving (Generic, Show, ToJSON, FromJSON)
+data LobbyError = LobbyFull | DuplicateName Name | UnknownPlayer Name | UnknownTeam Team | TeamFull
+    deriving (Generic, Show)
 
 teamFull' :: Members -> Bool
 teamFull' (Members (Just _) (Just _)) = True
@@ -58,8 +61,8 @@ getTeam name (Lobby {..}) = listToMaybe $ Map.keys $ Map.filter checkTeam assign
 
 playerJoin :: Name -> Lobby -> LobbyUpdate
 playerJoin name l@(Lobby {..})
-    | lobbyFull l  = Left "lobby full"
-    | playerInLobby name l = Left "duplicate name" -- TODO check if name is already in lobby
+    | lobbyFull l  = Left LobbyFull
+    | playerInLobby name l = Left $ DuplicateName name 
     | otherwise = Right $ (Lobby (unassignedPlayers ++ [name]) assignedPlayers, [PlayerJoined name])
 
 playerInLobby :: Name -> Lobby -> Bool
@@ -71,14 +74,14 @@ playerLeave name l@(Lobby {..}) =
         (Just team) -> Right $ (Lobby unassignedPlayers $ Map.adjust (memberLeave name) team assignedPlayers, events)
         Nothing -> if length unassignedPlayers' < length unassignedPlayers 
             then Right $ (Lobby unassignedPlayers' assignedPlayers, events)
-            else Left $ "player " ++ name ++ " not in this lobby"
+            else Left $ UnknownPlayer name
     where memberLeave name (Members {..}) = if spy == (Just name) then Members Nothing spymaster else Members spy Nothing
           events = [PlayerLeft name]
           unassignedPlayers' = filter (/=name) unassignedPlayers
 
 assignTeam :: Team -> Name -> Lobby -> LobbyUpdate
 assignTeam team name l
-    | teamFull l team = Left $ "team is full"
+    | teamFull l team = Left TeamFull
     | otherwise = (\(Lobby {..},_) -> (Lobby unassignedPlayers $ Map.adjust join team assignedPlayers, [TeamAssigned team name])) <$> playerLeave name l
     where join (Members Nothing x) = Members (Just name) x
           join (Members x Nothing) = Members x (Just name)
@@ -89,14 +92,14 @@ unassignTeam name l = (\(Lobby {..},_) -> (Lobby (unassignedPlayers ++ [name]) a
 switchRoles :: Team -> Lobby -> LobbyUpdate
 switchRoles team l@(Lobby {..}) = 
     case Map.lookup team assignedPlayers of
-        Nothing -> Left $ "team " ++ show team ++ "not found"
-        (Just (Members {..})) -> let
+        Nothing -> Left $ UnknownTeam team
+        (Just Members {..}) -> let
                     roleSwitch = Members spymaster spy
                     events (Members Nothing Nothing) = []
                     events m = [RolesSwitched m]
                 in Right (Lobby unassignedPlayers $ Map.insert team roleSwitch assignedPlayers, events roleSwitch)
 
 startGame :: [Word] -> Lobby -> LobbyUpdate
-startGame words l@(Lobby {..}) = undefined
+startGame words l@Lobby {..} = undefined
 
 exampleLobby = Lobby ["john", "quentin"] $ Map.fromList [(1,Members (Just "jim") Nothing),(2,Members Nothing Nothing)]

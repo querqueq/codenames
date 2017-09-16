@@ -11,6 +11,8 @@
 module Server where
 
 import API hiding                   (CodenameAPI)
+import Error
+import Classes
 import Lobby
 import Game                         (Game)
 import Servant
@@ -68,14 +70,14 @@ modifyLobby id updateF returnF = do
         case updateF <$> lobby of
             (Just (Right (lobby',events))) -> do 
                 modifyTVar' lobbyState $ Map.insert id lobby'
-                channel <- readTVar channels >>= return . (Map.lookup id)
+                channel <- readTVar channels >>= return . Map.lookup id
                 return $ case channel of
-                    Nothing -> Left "channel missing"
+                    Nothing -> Left $ err500 { errBody = "channel missing" }
                     (Just channel) -> Right (lobby',events,channel)
-            Nothing  -> return $ Left "unknown lobby"
-            (Just (Left x)) -> return $ Left "error" -- TODO return actual error
+            Nothing  -> return $ Left $ err404 { errBody = "unknown lobby" }
+            (Just (Left x)) -> return $ Left $ toServantErr x
     case result of
-        (Left x) -> throwError err400 -- TODO return actual error
+        (Left x) -> throwError x
         (Right (lobby,events,channel)) -> do
             liftIO $ mapM_ (writeChan channel . serverEvent LobbyChannel) events
             return $ returnF lobby

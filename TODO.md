@@ -17,6 +17,7 @@
 6.  ~~Map errors to appropriate http status codes~~
 7.  ~~Logging!~~
 8.  Implement a minimal Lobby client
+  * get miso to build with ghcjs via stack
 9.  ???
 10. Add sparql for game creation
 11. Host on heroku

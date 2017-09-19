@@ -2,7 +2,7 @@
 
 module Error where
 
-import Lobby
+import Models.Lobby
 import Classes
 import Servant
 import Data.ByteString.Lazy.Char8 (pack)

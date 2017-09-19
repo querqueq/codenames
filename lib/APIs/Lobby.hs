@@ -6,22 +6,11 @@
 -- {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module API where
+module APIs.Lobby where
 
-import Lobby
-import Game hiding (Team)
-import qualified Game as Game
+import Models.Lobby
 import Servant.API 
-
-type Id = String
-type GameId = Capture "gameid" Id
-type LobbyId = Capture "lobbyid" Id
-type Token = String
-type PlayerToken = Header "UserToken" Token
-type Team = Capture "team" Game.Team
-type PlayerName = Capture "name" Name
-
-type CodenameAPI = LobbyAPI :<|> GameAPI
+import APIs.Types
 
 type LobbyAPI = "lobbies" :> Get '[JSON] [(Id,Lobby)]
               -- Creates a new lobby and returns its game id
@@ -44,12 +33,3 @@ type LobbyAPI = "lobbies" :> Get '[JSON] [(Id,Lobby)]
                    :<|> "teams" :> Team :> "switch" :> Post '[JSON] NoContent
                    )
                 )
-                      
-          -- Start a game
-type GameAPI = "games" :> ReqBody '[JSON] (Token, LobbyId) :> Post '[JSON] GameId
-          -- Returns the current state of the game from the view of a spy
-          :<|> "games" :> GameId :> Get '[JSON] Game
-          -- Returns the role and team of a player
-          :<|> "games" :> GameId :> "players" :> PlayerToken :> Get '[JSON] Role  
-          -- Submits a move and returns nothing if it was a legal move otherwise returns an illegal change
-          :<|> "games" :> GameId :> "move" :> ReqBody '[JSON] (Token, Move) :> Post '[JSON] (Maybe IllegalChange)

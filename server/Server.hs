@@ -10,11 +10,12 @@
 
 module Server where
 
-import API hiding                   (CodenameAPI)
+import APIs hiding (CodenameAPI)
+import APIs.Types
 import Error
 import Classes
-import Lobby
-import Game                         (Game)
+import Models
+import Logic.Lobby
 import Servant
 import Servant.Server
 import Network.Wai.Logger

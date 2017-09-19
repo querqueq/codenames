@@ -1,11 +1,11 @@
 flags: {}
 extra-package-dbs: []
 packages:
-- .
+- ../
 extra-deps:
 - crockford-0.2
 - hgal-2.0.0.2
 - hsparql-0.3.5
 - rdf4h-3.0.1
 - ulid-0.2.0.0
-resolver: lts-9.4
+resolver: lts-9.5
